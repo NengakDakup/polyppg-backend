@@ -3,75 +3,512 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PolyPPG Live Monitor</title>
+  <title>PolyPPG Live Monitor & Simulator</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; background: #0f172a; color: #f8fafc; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 1.5rem; border: 1px solid #334155; }
-    h1, h2 { margin-top: 0; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-    .badge-connected { background: #065f46; color: #34d399; }
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    h1, h2, h3 { margin-top: 0; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 13px; font-weight: 600; }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .badge-connected { background: #064e3b; color: #34d399; }
+    .badge-connected .badge-dot { background: #34d399; }
     .badge-disconnected { background: #7f1d1d; color: #f87171; }
-    textarea { width: 100%; height: 210px; box-sizing: border-box; font-family: monospace; font-size: 13px; padding: 10px; background: #0f172a; color: #38bdf8; border: 1px solid #475569; border-radius: 6px; }
-    button { padding: 10px 18px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 10px; font-weight: bold; }
-    button:hover { background: #1d4ed8; }
-    pre { background: #020617; color: #a5f3fc; padding: 1rem; border-radius: 6px; overflow-x: auto; max-height: 400px; border: 1px solid #1e293b; font-size: 13px; }
+    .badge-disconnected .badge-dot { background: #f87171; }
+
+    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.5rem; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+    }
+
+    .preset-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .btn-preset {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #334155;
+      color: #e2e8f0;
+    }
+    .btn-preset:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-preset.green { background: #065f46; color: #a7f3d0; border-color: #059669; }
+    .btn-preset.amber { background: #78350f; color: #fde68a; border-color: #d97706; }
+    .btn-preset.red { background: #7f1d1d; color: #fecaca; border-color: #dc2626; }
+    .btn-preset.crisis { background: #581c87; color: #e9d5ff; border-color: #9333ea; }
+    .btn-preset.random { background: #1e3a8a; color: #bfdbfe; border-color: #3b82f6; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      box-sizing: border-box;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      padding: 10px;
+      background: #0f172a;
+      color: #38bdf8;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      resize: vertical;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    button.btn-primary {
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background 0.15s;
+    }
+    button.btn-primary:hover { background: var(--primary-hover); }
+    button.btn-secondary {
+      padding: 10px 16px;
+      background: #334155;
+      color: white;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    button.btn-secondary:hover { background: #475569; }
+    button.btn-stream {
+      background: #047857;
+    }
+    button.btn-stream.active {
+      background: #be123c;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.75; }
+    }
+
+    .status-msg {
+      font-size: 13px;
+      color: #34d399;
+      margin-left: 10px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .status-msg.show { opacity: 1; }
+
+    pre {
+      background: #020617;
+      color: #a5f3fc;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      max-height: 520px;
+      border: 1px solid #1e293b;
+      font-size: 12px;
+      margin: 0;
+    }
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .feed-stats {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <h1>PolyPPG Live Stream & Telemetry Server</h1>
-      <p>WebSocket Status: <span id="status" class="badge badge-disconnected">Connecting...</span></p>
-      <h2>Simulate Device POST (/api/data)</h2>
-      <textarea id="payloadInput">{
-  "device_id": "polyppg-001",
-  "hr": 72.4,
-  "spo2": 97.8,
-  "hbs_percent": 34.2,
-  "vrs": 0.42,
-  "alert_level": "AMBER",
-  "env_temperature": 27.3,
-  "skin_temperature": 34.5,
-  "humidity": 61.2,
-  "altitude": 187.5
-}</textarea><br>
-      <button id="sendBtn">Send Reading POST</button>
+    <div class="header">
+      <div>
+        <h1>PolyPPG Live Monitor & Simulator</h1>
+        <p style="margin: 0; color: var(--text-muted); font-size: 14px;">Telemetry generator and real-time WebSocket stream dashboard</p>
+      </div>
+      <div>
+        WebSocket: <span id="status" class="badge badge-disconnected"><span class="badge-dot"></span><span id="statusText">Connecting...</span></span>
+      </div>
     </div>
-    <div class="card">
-      <h2>Live WebSocket Updates (Newest First)</h2>
-      <pre id="liveFeed"></pre>
+
+    <div class="grid">
+      <!-- Simulator Column -->
+      <div class="card">
+        <h2>Telemetry Simulator</h2>
+        
+        <label>Quick Preset Alert Levels</label>
+        <div class="preset-group">
+          <button type="button" class="btn-preset green" onclick="applyPreset('NORMAL')">🟢 Normal (GREEN)</button>
+          <button type="button" class="btn-preset amber" onclick="applyPreset('AMBER')">🟡 Moderate (AMBER)</button>
+          <button type="button" class="btn-preset red" onclick="applyPreset('RED')">🔴 Critical (RED)</button>
+          <button type="button" class="btn-preset crisis" onclick="applyPreset('CRISIS')">🟣 Severe Crisis</button>
+          <button type="button" class="btn-preset random" onclick="applyRandom()">🎲 Random Jitter</button>
+        </div>
+
+        <form id="simForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="f_device_id">Device ID</label>
+              <input type="text" id="f_device_id" value="polyppg-001" />
+            </div>
+            <div class="form-group">
+              <label for="f_alert_level">Alert Level</label>
+              <select id="f_alert_level">
+                <option value="GREEN">GREEN</option>
+                <option value="AMBER">AMBER</option>
+                <option value="RED">RED</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="f_hr">Heart Rate (BPM)</label>
+              <input type="number" step="0.1" id="f_hr" value="72.4" />
+            </div>
+            <div class="form-group">
+              <label for="f_spo2">SpO2 (%)</label>
+              <input type="number" step="0.1" id="f_spo2" value="97.8" />
+            </div>
+            <div class="form-group">
+              <label for="f_hbs_percent">HbS (%)</label>
+              <input type="number" step="0.1" id="f_hbs_percent" value="34.2" />
+            </div>
+            <div class="form-group">
+              <label for="f_vrs">VRS Index</label>
+              <input type="number" step="0.01" id="f_vrs" value="0.42" />
+            </div>
+            <div class="form-group">
+              <label for="f_skin_temperature">Skin Temp (°C)</label>
+              <input type="number" step="0.1" id="f_skin_temperature" value="34.5" />
+            </div>
+            <div class="form-group">
+              <label for="f_env_temperature">Env Temp (°C)</label>
+              <input type="number" step="0.1" id="f_env_temperature" value="27.3" />
+            </div>
+            <div class="form-group">
+              <label for="f_humidity">Humidity (%)</label>
+              <input type="number" step="0.1" id="f_humidity" value="61.2" />
+            </div>
+            <div class="form-group">
+              <label for="f_altitude">Altitude (m)</label>
+              <input type="number" step="0.1" id="f_altitude" value="187.5" />
+            </div>
+          </div>
+        </form>
+
+        <label for="payloadInput">Raw JSON Payload (Bidirectional Sync)</label>
+        <textarea id="payloadInput"></textarea>
+
+        <div class="btn-row">
+          <button id="sendBtn" class="btn-primary">Send Reading POST</button>
+          <button id="streamBtn" class="btn-secondary btn-stream">Start Auto-Stream (1s)</button>
+          <span id="sentFeedback" class="status-msg">✓ Sent!</span>
+        </div>
+      </div>
+
+      <!-- Live Stream Column -->
+      <div class="card">
+        <div class="feed-header">
+          <h2>Live Stream Feed</h2>
+          <div class="feed-stats">
+            <span id="readingsCount">0</span> events received
+            <button id="clearFeedBtn" class="btn-preset" style="padding: 2px 8px; font-size: 11px; margin-left: 8px;">Clear</button>
+          </div>
+        </div>
+        <pre id="liveFeed">// Waiting for WebSocket incoming events...</pre>
+      </div>
     </div>
   </div>
+
   <script>
     const statusBadge = document.getElementById("status");
+    const statusText = document.getElementById("statusText");
     const liveFeed = document.getElementById("liveFeed");
-    const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(wsProto + "//" + window.location.host);
-    ws.onopen = () => {
-      statusBadge.textContent = "Connected";
-      statusBadge.className = "badge badge-connected";
+    const payloadInput = document.getElementById("payloadInput");
+    const sentFeedback = document.getElementById("sentFeedback");
+    const readingsCount = document.getElementById("readingsCount");
+    const streamBtn = document.getElementById("streamBtn");
+    let totalEvents = 0;
+    let streamInterval = null;
+
+    const formFields = [
+      "device_id", "alert_level", "hr", "spo2",
+      "hbs_percent", "vrs", "skin_temperature",
+      "env_temperature", "humidity", "altitude"
+    ];
+
+    const presets = {
+      NORMAL: {
+        device_id: "polyppg-001",
+        alert_level: "GREEN",
+        hr: 72.0,
+        spo2: 98.5,
+        hbs_percent: 18.5,
+        vrs: 0.15,
+        skin_temperature: 34.8,
+        env_temperature: 25.0,
+        humidity: 50.0,
+        altitude: 180.0
+      },
+      AMBER: {
+        device_id: "polyppg-001",
+        alert_level: "AMBER",
+        hr: 98.0,
+        spo2: 93.5,
+        hbs_percent: 42.0,
+        vrs: 0.55,
+        skin_temperature: 36.1,
+        env_temperature: 30.5,
+        humidity: 65.0,
+        altitude: 250.0
+      },
+      RED: {
+        device_id: "polyppg-001",
+        alert_level: "RED",
+        hr: 128.5,
+        spo2: 86.2,
+        hbs_percent: 68.0,
+        vrs: 0.88,
+        skin_temperature: 37.8,
+        env_temperature: 35.0,
+        humidity: 78.0,
+        altitude: 1200.0
+      },
+      CRISIS: {
+        device_id: "polyppg-001",
+        alert_level: "RED",
+        hr: 145.0,
+        spo2: 79.5,
+        hbs_percent: 82.5,
+        vrs: 0.96,
+        skin_temperature: 38.6,
+        env_temperature: 38.0,
+        humidity: 85.0,
+        altitude: 2100.0
+      }
     };
-    ws.onclose = () => {
-      statusBadge.textContent = "Disconnected";
-      statusBadge.className = "badge badge-disconnected";
-    };
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      liveFeed.textContent = JSON.stringify(data, null, 2) + "\n\n" + liveFeed.textContent;
-    };
-    document.getElementById("sendBtn").addEventListener("click", async () => {
+
+    function getFormValues() {
+      const data = {};
+      formFields.forEach(id => {
+        const el = document.getElementById("f_" + id);
+        if (el.type === "number") {
+          data[id] = parseFloat(el.value) || 0;
+        } else {
+          data[id] = el.value;
+        }
+      });
+      return data;
+    }
+
+    function setFormValues(data) {
+      formFields.forEach(id => {
+        const el = document.getElementById("f_" + id);
+        if (data[id] !== undefined && el) {
+          el.value = data[id];
+        }
+      });
+      syncFormToJson();
+    }
+
+    function syncFormToJson() {
+      const data = getFormValues();
+      payloadInput.value = JSON.stringify(data, null, 2);
+    }
+
+    function syncJsonToForm() {
       try {
-        const body = JSON.parse(document.getElementById("payloadInput").value);
+        const data = JSON.parse(payloadInput.value);
+        formFields.forEach(id => {
+          const el = document.getElementById("f_" + id);
+          if (data[id] !== undefined && el) {
+            el.value = data[id];
+          }
+        });
+      } catch (e) {
+        // user might be typing invalid json
+      }
+    }
+
+    function applyPreset(name) {
+      if (presets[name]) {
+        setFormValues(presets[name]);
+      }
+    }
+
+    function applyRandom() {
+      const current = getFormValues();
+      const jitter = (val, range) => +(val + (Math.random() * range * 2 - range)).toFixed(1);
+      
+      const updated = {
+        ...current,
+        hr: Math.max(40, jitter(current.hr || 75, 4)),
+        spo2: Math.min(100, Math.max(70, jitter(current.spo2 || 96, 1.5))),
+        hbs_percent: Math.min(100, Math.max(0, jitter(current.hbs_percent || 30, 2))),
+        vrs: +(Math.min(1.0, Math.max(0.0, (current.vrs || 0.3) + (Math.random() * 0.08 - 0.04)))).toFixed(2),
+        skin_temperature: +(jitter(current.skin_temperature || 34.5, 0.2)).toFixed(1),
+        env_temperature: +(jitter(current.env_temperature || 26.0, 0.3)).toFixed(1),
+        humidity: Math.min(100, Math.max(10, jitter(current.humidity || 55, 1.5)))
+      };
+
+      if (updated.spo2 < 88 || updated.vrs > 0.75 || updated.hr > 120) {
+        updated.alert_level = "RED";
+      } else if (updated.spo2 < 94 || updated.vrs > 0.45 || updated.hr > 95) {
+        updated.alert_level = "AMBER";
+      } else {
+        updated.alert_level = "GREEN";
+      }
+
+      setFormValues(updated);
+    }
+
+    // Attach form input listeners
+    formFields.forEach(id => {
+      const el = document.getElementById("f_" + id);
+      el.addEventListener("input", syncFormToJson);
+    });
+    payloadInput.addEventListener("input", syncJsonToForm);
+
+    // Initial sync
+    syncFormToJson();
+
+    // WebSocket Connection
+    function connectWs() {
+      const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const ws = new WebSocket(wsProto + "//" + window.location.host);
+
+      ws.onopen = () => {
+        statusText.textContent = "Connected";
+        statusBadge.className = "badge badge-connected";
+      };
+
+      ws.onclose = () => {
+        statusText.textContent = "Disconnected";
+        statusBadge.className = "badge badge-disconnected";
+        setTimeout(connectWs, 3000);
+      };
+
+      ws.onmessage = (event) => {
+        totalEvents++;
+        readingsCount.textContent = totalEvents;
+        const data = JSON.parse(event.data);
+        const entry = JSON.stringify(data, null, 2);
+        if (liveFeed.textContent.startsWith("// Waiting")) {
+          liveFeed.textContent = entry;
+        } else {
+          liveFeed.textContent = entry + "\n\n" + liveFeed.textContent;
+        }
+      };
+    }
+    connectWs();
+
+    // Send action
+    async function sendPost() {
+      try {
+        const body = JSON.parse(payloadInput.value);
         const res = await fetch("/api/data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)
         });
         const result = await res.json();
-        console.log("Saved:", result);
+        sentFeedback.classList.add("show");
+        setTimeout(() => sentFeedback.classList.remove("show"), 1200);
+        return result;
       } catch (err) {
-        alert("Error: " + err.message);
+        alert("Error sending POST: " + err.message);
+      }
+    }
+
+    document.getElementById("sendBtn").addEventListener("click", sendPost);
+
+    document.getElementById("clearFeedBtn").addEventListener("click", () => {
+      liveFeed.textContent = "// Cleared feed";
+      totalEvents = 0;
+      readingsCount.textContent = "0";
+    });
+
+    // Auto stream simulator toggle
+    streamBtn.addEventListener("click", () => {
+      if (streamInterval) {
+        clearInterval(streamInterval);
+        streamInterval = null;
+        streamBtn.textContent = "Start Auto-Stream (1s)";
+        streamBtn.classList.remove("active");
+      } else {
+        streamBtn.textContent = "Stop Auto-Stream";
+        streamBtn.classList.add("active");
+        sendPost();
+        streamInterval = setInterval(() => {
+          applyRandom();
+          sendPost();
+        }, 1000);
       }
     });
   </script>
